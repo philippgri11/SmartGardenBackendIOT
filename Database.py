@@ -34,6 +34,14 @@ def updateZoneTitel(zoneID, titel):
     """, (titel, zoneID))
     con.commit()
 
+def updateStatus(zoneID, status):
+    con.execute("""
+    UPDATE ZONES
+    SET STATUS=?
+    WHERE ZONE_ID=?
+    """, (status, zoneID))
+    con.commit()
+
 def getZones():
     inhalt = executeSelect("""
         SELECT *

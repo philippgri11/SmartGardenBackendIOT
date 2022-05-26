@@ -101,11 +101,22 @@ def delete_rule():
                    ), 200
 
 
+@api.route('/update_status', methods=['POST'])
+@cross_origin()
+def update_status():
+    request_data = request.data
+    id = json.loads(request_data)['id']
+    status = json.loads(request_data)['status']
+    Database.updateStatus(id, status)
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
 @api.route('/save_rule', methods=['POST'])
 @cross_origin()
 def save_rule():
     request_data = request.data
-    print(request_data)
     id = json.loads(request_data)['id']
     bisHours = json.loads(request_data)['bis']['hours']
     bisMinutes = json.loads(request_data)['bis']['minutes']
@@ -113,7 +124,6 @@ def save_rule():
     vonminutes = json.loads(request_data)['von']['minutes']
     wochentag = json.loads(request_data)['wochentage']
     wetter = json.loads(request_data)['wetter']
-    print(wochentag)
     tage = ''
     for tag in wochentag:
         if (tag):
