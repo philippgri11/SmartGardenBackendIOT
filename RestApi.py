@@ -14,10 +14,6 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 api = Flask(__name__)
 
 
-def __init__(self):
-    pass
-
-
 @api.route('/get_zones', methods=['GET'])
 @cross_origin()
 def add_rule():
@@ -52,6 +48,7 @@ def get_zone_titel():
     zoneId = request.args.get('zone_id', type=int)
     return json.dumps(Database.getZoneTitel(zoneId)[0])
 
+
 @api.route('/get_rules', methods=['GET'])
 @cross_origin()
 def get_rules():
@@ -70,13 +67,12 @@ def get_rules():
     #                     'wochentage': [True, False, True, True, True, False, True], 'wetter': True}])
 
 
-
 @api.route('/get_rule', methods=['GET'])
 @cross_origin()
 def get_rule():
     ruleID = request.args.get('ruleId', type=int)
     print(ruleID)
-    return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls= RuleEncoder)
+    return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls=RuleEncoder)
     # return json.dumps({'id': 1, 'von': {'hours': 11, 'minutes': 15}, 'bis': {'hours': 17, 'minutes': 10},
     #                    'wochentage': [True, True, True, False, True, False, True], 'wetter': True})
 
@@ -84,10 +80,11 @@ def get_rule():
 @api.route('/create_new_rule', methods=['GET'])
 @cross_origin()
 def create_new_rule():
-    zoneId = request.args.get('zone_id', type=int)
-    Database.createNewRule(0,0,0,0,"0000000",0,zoneId)
+    zoneId = request.args.get('zoneID', type=int)
+    print(zoneId)
+    Database.createNewRule(0, 0, 0, 0, "0000000", 0, zoneId)
     ruleID = Database.getLastRuleID()
-    return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls= RuleEncoder)
+    return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls=RuleEncoder)
     # return json.dumps({'id': 1, 'von': {'hours': 15, 'minutes': 13}, 'bis': {'hours': 17, 'minutes': 10},
     #                    'wochentage': [True, True, True, False, True, False, True], 'wetter': True})
 
@@ -95,6 +92,9 @@ def create_new_rule():
 @api.route('/delete_rule', methods=['POST'])
 @cross_origin()
 def delete_rule():
+    request_data = request.data
+    id = json.loads(request_data)['id']
+    Database.deleteRuleByRuleId(id)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -104,6 +104,23 @@ def delete_rule():
 @api.route('/save_rule', methods=['POST'])
 @cross_origin()
 def save_rule():
+    request_data = request.data
+    print(request_data)
+    id = json.loads(request_data)['id']
+    bisHours = json.loads(request_data)['bis']['hours']
+    bisMinutes = json.loads(request_data)['bis']['minutes']
+    vonHours = json.loads(request_data)['von']['hours']
+    vonminutes = json.loads(request_data)['von']['minutes']
+    wochentag = json.loads(request_data)['wochentage']
+    wetter = json.loads(request_data)['wetter']
+    print(wochentag)
+    tage = ''
+    for tag in wochentag:
+        if (tag):
+            tage += '1'
+        else:
+            tage += '0'
+    Database.saveRule(vonminutes, vonHours, bisMinutes, bisHours, tage, wetter, id)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,

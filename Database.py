@@ -54,12 +54,28 @@ def getRuleByRuleId(ruleID):
         WHERE RULE_ID=?""", (ruleID,))
     return inhalt
 
+def deleteRuleByRuleId(ruleID):
+    con.execute("""
+        DELETE
+        FROM Rules
+        WHERE RULE_ID=?""", (ruleID,))
+    con.commit()
+
+
 def getZoneTitel(zoneId):
     return executeSelect("""
         SELECT NAME
         FROM Zones
         WHERE ZONE_ID=?""", (zoneId,))
 
+
+def saveRule(vonminutes,vonHours,bisMinutes,bisHours,wochentag,wetter,id):
+    con.execute("""
+    UPDATE Rules
+    SET VONMIN = ?, VONHOUR  = ?, BISMIN  = ?, BISHOUR  = ?, DAYS  = ?, WETTER = ?
+    where RULE_ID = ?
+    """, (vonminutes,vonHours,bisMinutes,bisHours,wochentag,wetter,id,))
+    con.commit()
 
 def getLastRuleID():
     return executeSelect("""SELECT MAX(RULE_ID) FROM RULES""",())[0][0]
@@ -94,5 +110,5 @@ def createTables():
 
 
 if __name__ == '__main__':
-    createNewRule(0,0,0,0,"0000000",0,1)
+    deleteRuleByRuleId(8)
   #  print(getRules(1))

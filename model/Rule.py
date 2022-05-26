@@ -1,17 +1,22 @@
 import datetime
 import json
-import time
 
 
 class Rule:
     def __init__(self, *args):
-        print(args[0])
+        print(args)
         if len(args) == 5:
             self.id = args[0]
             self.von = args[1]
             self.bis = args[2]
             self.wochentag = args[3]
             self.wetter = args[4]
+        elif len(args) == 8:
+            self.id = args[0]
+            self.von = datetime.time(args[2], args[1])
+            self.bis = datetime.time(args[4], args[3])
+            self.wochentag = args[5]
+            self.wetter = args[6]
         elif isinstance(args[0], tuple):
             zone = args[0]
             self.id = zone[0]
