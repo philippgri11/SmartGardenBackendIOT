@@ -16,6 +16,8 @@ api = Flask(__name__)
 @api.route('/get_zones', methods=['GET'])
 @cross_origin()
 def add_rule():
+    print(request.headers.get('x-access-token'))
+    Auth.verifyToken(request.headers.get('x-access-token'),'123456789')
     zones = []
     [zones.append(Zone(zone)) for zone in Database.getZones()]
     return json.dumps(zones, cls=ZoneEncoder)

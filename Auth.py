@@ -39,7 +39,8 @@ def generateTokenRSA(email):
 
 
 def generateToken(email):
-    secret = Crypto.Random.get_random_bytes(32)
+    # secret = Crypto.Random.get_random_bytes(32)
+    secret = '123456789'
     Database.storeSecret(secret, email)
     encoded = jwt.encode({"email": email}, secret, algorithm="HS256")
     return encoded
@@ -51,5 +52,10 @@ def generateAndStoreKeys(email):
     Database.storeSecrets(private_key,public_key, email)
     return key
 
+
+def verifyToken(token,secret):
+    print(jwt.decode(token,secret, algorithms="HS256"))
+
+
 if __name__ == '__main__':
-    print(generateToken('philipp.grill(at)freenet.de'))
+    print(jwt.decode('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InBoaWxpcHAuZ3JpbGxAZnJlZW5ldC5kZSJ9.bZIZ3mtbEwLRxJfZUZLjiflxrpYna3jQzWFpYzTqeZI','123456789', algorithms="HS256"))
