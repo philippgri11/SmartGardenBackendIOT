@@ -116,6 +116,37 @@ def createTables():
                 FOREIGN KEY(ZONE_ID) REFERENCES ZONE(ZONE_ID)
             );""")
 
+def findOneUser(email):
+    inhalt = executeSelect("""
+        SELECT * FROM User WHERE email= ?""",(email,))
+    return inhalt
+
+def createNewUser(email, firstName, lastName, password):
+    con.execute("""
+    INSERT INTO User (email, firstName, lastName, password)
+    VALUES (?,?,?,?)
+    """, (email, firstName, lastName, password,))
+    con.commit()
+
+def getSaltFromStorage(email):
+    key = executeSelect("""
+        SELECT password FROM User WHERE email= ?""",(email,))[0][0]
+    return key[:32] # 32 is the length of the salt
+
+def getPasswordFromStorage(email):
+    key = executeSelect("""
+        SELECT password FROM User WHERE email= ?""",(email,))[0][0]
+    return key[32:] # 32 is the length of the salt
+
+
+def storeSecret(secret, email):
+    con.execute("""
+    UPDATE User
+    SET secret=? 
+    WHERE email=?
+    """, (secret, email,))
+    con.commit()
+
 
 if __name__ == '__main__':
     deleteRuleByRuleId(8)

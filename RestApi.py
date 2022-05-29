@@ -1,8 +1,7 @@
-import string
-
 from flask import Flask, json, request, jsonify
 from flask_cors import CORS, cross_origin
 
+import Auth
 import Database
 from model.Rule import Rule, RuleEncoder
 from model.Zone import Zone, ZoneEncoder
@@ -113,6 +112,7 @@ def update_status():
                    statusCode=200,
                    ), 200
 
+
 @api.route('/save_rule', methods=['POST'])
 @cross_origin()
 def save_rule():
@@ -135,6 +135,53 @@ def save_rule():
                    message="Success",
                    statusCode=200,
                    ), 200
+
+
+@api.route('/register', methods=['POST'])
+@cross_origin()
+def register():
+    request_data = request.data
+    print(request_data)
+    email = json.loads(request_data)['email']
+    password = json.loads(request_data)['password']
+    firstName = json.loads(request_data)['first_name']
+    lastName = json.loads(request_data)['last_name']
+
+    if len(Database.findOneUser(email)) != 0:
+        return jsonify(isError=False,
+                       message="User Already Exist. Please Login",
+                       statusCode=409,
+                       ), 409
+
+    salt = Auth.generateSalt()
+    print(salt)
+    encryptedPassword = Auth.encryptedPassword(password, salt)
+    storagePassword = salt + encryptedPassword
+
+    Database.createNewUser(email, firstName, lastName, storagePassword)
+
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
+
+@api.route('/login', methods=['POST'])
+@cross_origin()
+def login():
+    request_data = request.data
+    print(request_data)
+    email = json.loads(request_data)['email']
+    password_to_check = json.loads(request_data)['password']
+    print(password_to_check)
+    if len(Database.findOneUser(email)) == 1:
+        if (Auth.verifyPassword(password_to_check, email)):
+            return json.dumps(Auth.generateToken(email))
+
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=404,
+                   ), 404
 
 
 if __name__ == '__main__':
