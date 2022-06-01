@@ -1,7 +1,10 @@
+from urllib.request import urlopen
+
+import flask
+from jose import jwt
 from flask import Flask, json, request, jsonify
 from flask_cors import CORS, cross_origin
-
-import Auth
+from six import wraps
 import Database
 from model.Rule import Rule, RuleEncoder
 from model.Zone import Zone, ZoneEncoder
@@ -10,32 +13,124 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+
+ALGORITHMS = ["RS256"]
+AUTH0_DOMAIN = 'dev-3q0bg4dy.us.auth0.com'
+API_AUDIENCE = 'http://127.0.0.1:5000/'
+
 api = Flask(__name__)
 
+def get_token_auth_header():
+    """Obtains the Access Token from the Authorization Header
+    """
+    auth = request.headers.get("Authorization", None)
+    if not auth:
+        raise AuthError({"code": "authorization_header_missing",
+                        "description":
+                            "Authorization header is expected"}, 401)
 
-@api.route('/get_zones', methods=['GET'])
-@cross_origin()
-def add_rule():
-    print(request.headers.get('x-access-token'))
-    Auth.verifyToken(request.headers.get('x-access-token'),'123456789')
-    zones = []
-    [zones.append(Zone(zone)) for zone in Database.getZones()]
-    return json.dumps(zones, cls=ZoneEncoder)
-    # return json.dumps([{'id': 'id1', 'title': 'title1', 'status': True},
-    #                    {'id': 'id2', 'title': 'title2', 'status': False},
-    #                    {'id': 'id2', 'title': 'title2', 'status': False},
-    #                    {'id': 'id2', 'title': 'title2', 'status': False},
-    #                    {'id': 'id3', 'title': 'title3', 'status': True},
-    #                    {'id': 'id4', 'title': 'title4', 'status': False}])
+    parts = auth.split()
+
+    if parts[0].lower() != "bearer":
+        raise AuthError({"code": "invalid_header",
+                        "description":
+                            "Authorization header must start with"
+                            " Bearer"}, 401)
+    elif len(parts) == 1:
+        raise AuthError({"code": "invalid_header",
+                        "description": "Token not found"}, 401)
+    elif len(parts) > 2:
+        raise AuthError({"code": "invalid_header",
+                        "description":
+                            "Authorization header must be"
+                            " Bearer token"}, 401)
+
+    token = parts[1]
+    return token
+
+def requires_auth(f):
+    """Determines if the Access Token is valid
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = get_token_auth_header()
+        jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+        jwks = json.loads(jsonurl.read())
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"]
+                }
+        if rsa_key:
+            try:
+                payload = jwt.decode(
+                    token,
+                    rsa_key,
+                    algorithms=ALGORITHMS,
+                    audience=API_AUDIENCE,
+                    issuer="https://"+AUTH0_DOMAIN+"/"
+                )
+            except jwt.ExpiredSignatureError:
+                raise AuthError({"code": "token_expired",
+                                "description": "token is expired"}, 401)
+            except jwt.JWTClaimsError:
+                raise AuthError({"code": "invalid_claims",
+                                "description":
+                                    "incorrect claims,"
+                                    "please check the audience and issuer"}, 401)
+            except Exception:
+                raise AuthError({"code": "invalid_header",
+                                "description":
+                                    "Unable to parse authentication"
+                                    " token."}, 401)
+
+            flask._request_ctx_stack.top.current_user = payload
+            return f(*args, **kwargs)
+        raise AuthError({"code": "invalid_header",
+                        "description": "Unable to find appropriate key"}, 401)
+    return decorated
+
+def requires_scope(required_scope):
+    """Determines if the required scope is present in the Access Token
+    Args:
+        required_scope (str): The scope required to access the resource
+    """
+    token = get_token_auth_header()
+    unverified_claims = jwt.get_unverified_claims(token)
+    if unverified_claims.get("scope"):
+        token_scopes = unverified_claims["scope"].split()
+        for token_scope in token_scopes:
+            if token_scope == required_scope:
+                return True
+    return False
+
+class AuthError(Exception):
+    def __init__(self, error, status_code):
+        self.error = error
+        self.status_code = status_code
+
+
+@api.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
 
 
 @api.route('/save_zone_title', methods=['POST'])
 @cross_origin()
+@requires_auth
 def set_zone_title():
     request_data = request.data
     title = json.loads(request_data)['title']
     zoneId = json.loads(request_data)['zoneId']
-    print(title)
     Database.updateZoneTitel(zoneId, title)
     return jsonify(isError=False,
                    message="Success",
@@ -45,6 +140,7 @@ def set_zone_title():
 
 @api.route('/get_zone_titel', methods=['GET'])
 @cross_origin()
+@requires_auth
 def get_zone_titel():
     zoneId = request.args.get('zone_id', type=int)
     return json.dumps(Database.getZoneTitel(zoneId)[0])
@@ -52,11 +148,11 @@ def get_zone_titel():
 
 @api.route('/get_rules', methods=['GET'])
 @cross_origin()
+@requires_auth
 def get_rules():
     zoneId = request.args.get('zone_id', type=int)
     rules = []
     [rules.append(Rule(rule)) for rule in Database.getRules(zoneId)]
-    print(rules)
     return json.dumps(rules, cls=RuleEncoder)
     # return json.dumps([{'id': 1, 'von': {'hours': 15, 'minutes': 18}, 'bis': {'hours': 17, 'minutes': 10},
     #                     'wochentage': [True, True, True, False, True, False, True], 'wetter': True},
@@ -70,9 +166,9 @@ def get_rules():
 
 @api.route('/get_rule', methods=['GET'])
 @cross_origin()
+@requires_auth
 def get_rule():
     ruleID = request.args.get('ruleId', type=int)
-    print(ruleID)
     return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls=RuleEncoder)
     # return json.dumps({'id': 1, 'von': {'hours': 11, 'minutes': 15}, 'bis': {'hours': 17, 'minutes': 10},
     #                    'wochentage': [True, True, True, False, True, False, True], 'wetter': True})
@@ -80,9 +176,9 @@ def get_rule():
 
 @api.route('/create_new_rule', methods=['GET'])
 @cross_origin()
+@requires_auth
 def create_new_rule():
     zoneId = request.args.get('zoneID', type=int)
-    print(zoneId)
     Database.createNewRule(0, 0, 0, 0, "0000000", 0, zoneId)
     ruleID = Database.getLastRuleID()
     return json.dumps(Rule(Database.getRuleByRuleId(ruleID)[0]), cls=RuleEncoder)
@@ -92,6 +188,7 @@ def create_new_rule():
 
 @api.route('/delete_rule', methods=['POST'])
 @cross_origin()
+@requires_auth
 def delete_rule():
     request_data = request.data
     id = json.loads(request_data)['id']
@@ -104,6 +201,7 @@ def delete_rule():
 
 @api.route('/update_status', methods=['POST'])
 @cross_origin()
+@requires_auth
 def update_status():
     request_data = request.data
     id = json.loads(request_data)['id']
@@ -117,6 +215,7 @@ def update_status():
 
 @api.route('/save_rule', methods=['POST'])
 @cross_origin()
+@requires_auth
 def save_rule():
     request_data = request.data
     id = json.loads(request_data)['id']
@@ -139,52 +238,52 @@ def save_rule():
                    ), 200
 
 
-@api.route('/register', methods=['POST'])
+def get_token_auth_header():
+    """Obtains the Access Token from the Authorization Header
+    """
+    auth = request.headers.get("Authorization", None)
+    if not auth:
+        raise AuthError({"code": "authorization_header_missing",
+                         "description":
+                             "Authorization header is expected"}, 401)
+
+    parts = auth.split()
+
+    if parts[0].lower() != "bearer":
+        raise AuthError({"code": "invalid_header",
+                         "description":
+                             "Authorization header must start with"
+                             " Bearer"}, 401)
+    elif len(parts) == 1:
+        raise AuthError({"code": "invalid_header",
+                         "description": "Token not found"}, 401)
+    elif len(parts) > 2:
+        raise AuthError({"code": "invalid_header",
+                         "description":
+                             "Authorization header must be"
+                             " Bearer token"}, 401)
+
+    token = parts[1]
+    return token
+
+
+
+
+
+
+@api.route('/get_zones', methods=['GET'])
 @cross_origin()
-def register():
-    request_data = request.data
-    print(request_data)
-    email = json.loads(request_data)['email']
-    password = json.loads(request_data)['password']
-    firstName = json.loads(request_data)['first_name']
-    lastName = json.loads(request_data)['last_name']
-
-    if len(Database.findOneUser(email)) != 0:
-        return jsonify(isError=False,
-                       message="User Already Exist. Please Login",
-                       statusCode=409,
-                       ), 409
-
-    salt = Auth.generateSalt()
-    print(salt)
-    encryptedPassword = Auth.encryptedPassword(password, salt)
-    storagePassword = salt + encryptedPassword
-
-    Database.createNewUser(email, firstName, lastName, storagePassword)
-
-    return jsonify(isError=False,
-                   message="Success",
-                   statusCode=200,
-                   ), 200
-
-
-@api.route('/login', methods=['POST'])
-@cross_origin()
-def login():
-    request_data = request.data
-    print(request_data)
-    email = json.loads(request_data)['email']
-    password_to_check = json.loads(request_data)['password']
-    print(password_to_check)
-    if len(Database.findOneUser(email)) == 1:
-        if (Auth.verifyPassword(password_to_check, email)):
-            return json.dumps(Auth.generateToken(email))
-
-    return jsonify(isError=False,
-                   message="Success",
-                   statusCode=404,
-                   ), 404
-
+@requires_auth
+def add_rule():
+    zones = []
+    [zones.append(Zone(zone)) for zone in Database.getZones()]
+    return json.dumps(zones, cls=ZoneEncoder)
+    # return json.dumps([{'id': 'id1', 'title': 'title1', 'status': True},
+    #                    {'id': 'id2', 'title': 'title2', 'status': False},
+    #                    {'id': 'id2', 'title': 'title2', 'status': False},
+    #                    {'id': 'id2', 'title': 'title2', 'status': False},
+    #                    {'id': 'id3', 'title': 'title3', 'status': True},
+    #                    {'id': 'id4', 'title': 'title4', 'status': False}])
 
 if __name__ == '__main__':
     api.run()
