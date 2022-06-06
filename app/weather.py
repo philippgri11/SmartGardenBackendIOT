@@ -1,7 +1,7 @@
 import json
 
 import requests
-with open('environment.json') as f:
+with open("environment.json") as f:
     d = json.load(f)
     api_key = d["api_key"]
     base_url = d["base_url"]

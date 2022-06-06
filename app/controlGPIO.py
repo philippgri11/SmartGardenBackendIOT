@@ -1,7 +1,7 @@
 import json
 from weather import getRainThisDay
 
-with open('environment.json') as f:
+with open("environment.json") as f:
     d = json.load(f)
     rainThreshold = d["rainThreshold"]
 

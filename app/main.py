@@ -1,22 +1,27 @@
 import os
 from urllib.request import urlopen
 import flask
-from flask import Flask, json, request, jsonify
-from flask_cors import CORS, cross_origin
+from flask import json, request, jsonify, Flask
+from flask_cors import cross_origin
 import Database
-import scheduler
-from model.Rule import Rule, RuleEncoder
-from model.Zone import Zone, ZoneEncoder
+
+from Rule import Rule, RuleEncoder
+from Zone import Zone, ZoneEncoder
 from jose import jwt
 from six import wraps
+from scheduler import scheduler, scheduleTasks, scheduleJob
 
-app = Flask(__name__)
-cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+from start import create_app
 
-api = Flask(__name__)
+app = create_app()
 
-with open('environment.json') as f:
+@app.before_first_request
+def before_first_request():
+    print('before_first_request')
+    scheduler.start()
+    scheduleTasks()
+
+with open("environment.json") as f:
     d = json.load(f)
     ALGORITHMS = d["ALGORITHMS"]
     AUTH0_DOMAIN = d["AUTH0_DOMAIN"]
@@ -126,14 +131,14 @@ class AuthError(Exception):
         self.status_code = status_code
 
 
-@api.errorhandler(AuthError)
+@app.errorhandler(AuthError)
 def handle_auth_error(ex):
     response = jsonify(ex.error)
     response.status_code = ex.status_code
     return response
 
 
-@api.route('/save_zone_title', methods=['POST'])
+@app.route('/save_zone_title', methods=['POST'])
 @cross_origin()
 @requires_auth
 def set_zone_title():
@@ -147,7 +152,7 @@ def set_zone_title():
                    ), 200
 
 
-@api.route('/get_zone_titel', methods=['GET'])
+@app.route('/get_zone_titel', methods=['GET'])
 @cross_origin()
 @requires_auth
 def get_zone_titel():
@@ -155,7 +160,7 @@ def get_zone_titel():
     return json.dumps(Database.getZoneTitel(zoneId))
 
 
-@api.route('/get_rules', methods=['GET'])
+@app.route('/get_rules', methods=['GET'])
 @cross_origin()
 @requires_auth
 def get_rules():
@@ -165,7 +170,7 @@ def get_rules():
     return json.dumps(rules, cls=RuleEncoder)
 
 
-@api.route('/get_rule', methods=['GET'])
+@app.route('/get_rule', methods=['GET'])
 @cross_origin()
 @requires_auth
 def get_rule():
@@ -173,7 +178,7 @@ def get_rule():
     return json.dumps(Database.getRuleByRuleId(ruleID), cls=RuleEncoder)
 
 
-@api.route('/create_new_rule', methods=['GET'])
+@app.route('/create_new_rule', methods=['GET'])
 @cross_origin()
 @requires_auth
 def create_new_rule():
@@ -183,7 +188,7 @@ def create_new_rule():
     return json.dumps(Database.getRuleByRuleId(ruleID), cls=RuleEncoder)
 
 
-@api.route('/delete_rule', methods=['POST'])
+@app.route('/delete_rule', methods=['POST'])
 @cross_origin()
 @requires_auth
 def delete_rule():
@@ -197,7 +202,7 @@ def delete_rule():
                    ), 200
 
 
-@api.route('/update_status', methods=['POST'])
+@app.route('/update_status', methods=['POST'])
 @cross_origin()
 @requires_auth
 def update_status():
@@ -211,7 +216,7 @@ def update_status():
                    ), 200
 
 
-@api.route('/save_rule', methods=['POST'])
+@app.route('/save_rule', methods=['POST'])
 @cross_origin()
 @requires_auth
 def save_rule():
@@ -231,7 +236,7 @@ def save_rule():
             tage += '0'
     rule = Rule(id, vonminutes, vonHours, bisMinutes, bisHours, tage, wetter)
     if rule.changed():
-        scheduler.scheduleJob(rule)
+        scheduleJob(rule)
         Database.saveRule(rule)
     return jsonify(isError=False,
                    message="Success",
@@ -239,7 +244,7 @@ def save_rule():
                    ), 200
 
 
-@api.route('/get_zones', methods=['GET'])
+@app.route('/get_zones', methods=['GET'])
 @cross_origin()
 @requires_auth
 def get_zones():
@@ -248,5 +253,16 @@ def get_zones():
     return json.dumps(zones, cls=ZoneEncoder)
 
 
+@app.route('/start', methods=['POST'])
+@cross_origin()
+def start():
+    scheduler.start()
+    scheduleTasks()
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
+
 if __name__ == '__main__':
-    api.run()
+    app.run()

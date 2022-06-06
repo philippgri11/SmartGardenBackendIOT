@@ -2,9 +2,9 @@ import json
 import os
 import sqlite3 as sql
 
-from model.Rule import Rule
+from Rule import Rule
 
-with open('environment.json') as f:
+with open("environment.json") as f:
     d = json.load(f)
     databaseName = d["databaseName"]
 

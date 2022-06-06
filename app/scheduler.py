@@ -1,17 +1,16 @@
 import json
-import time
+import os
+
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 import Database
 import controlGPIO
 from Database import getAllRules
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.triggers.cron import CronTrigger
-import os
+from Rule import Rule
 
-from model.Rule import Rule
-
-with open('environment.json') as f:
+with open("environment.json") as f:
     d = json.load(f)
     databaseName = d["databaseName"]
 

@@ -3,6 +3,7 @@ import json
 
 import Database
 
+
 class Rule:
     def __init__(self, *args):
         print(args)
