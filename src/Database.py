@@ -2,16 +2,20 @@ import json
 import os
 import sqlite3 as sql
 
-from Rule import Rule
+from src.Rule import Rule
 
-with open("environment.json") as f:
+with open("src/environment.json") as f:
     d = json.load(f)
     databaseName = d["databaseName"]
 
-_module_directory = os.path.dirname(os.path.abspath(__file__))
-con = sql.connect(os.path.join(_module_directory, databaseName), check_same_thread=False)
+# _module_directory = os.path.dirname(os.path.abspath(__file__)).removesuffix('/src')
+# path= os.path.join(_module_directory, databaseName)
+path = "/project/smartGarden.sqlite"
+con = sql.connect(path, check_same_thread=False)
 c = con.cursor()
 
+def getPath():
+    return path
 
 def executeSelect(query, args):
     c.execute(query, args)

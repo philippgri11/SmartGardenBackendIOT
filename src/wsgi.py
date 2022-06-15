@@ -1,5 +1,5 @@
 from flask import Flask
-from scheduler import scheduler, scheduleTasks
+from src.scheduler import scheduler, scheduleTasks
 #
 # scheduler.start()
 # scheduleTasks()
@@ -7,8 +7,11 @@ from scheduler import scheduler, scheduleTasks
 def create_app():
     app = Flask(__name__)
     app.config['CORS_HEADERS'] = 'Content-Type'
-
-    # scheduler.start()
-    # scheduleTasks()
+    scheduler.start()
+    scheduleTasks()
     return app
 
+from src.main import app
+
+if __name__ == "__main__":
+    app.run()

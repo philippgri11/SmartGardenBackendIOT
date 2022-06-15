@@ -3,25 +3,25 @@ from urllib.request import urlopen
 import flask
 from flask import json, request, jsonify, Flask
 from flask_cors import cross_origin
-import Database
+import src.Database as Database
 
-from Rule import Rule, RuleEncoder
-from Zone import Zone, ZoneEncoder
+from src.Rule import Rule, RuleEncoder
+from src.Zone import Zone, ZoneEncoder
 from jose import jwt
 from six import wraps
-from scheduler import scheduler, scheduleTasks, scheduleJob
+from src.scheduler import scheduler, scheduleTasks, scheduleJob
 
-from start import create_app
+from src.wsgi import create_app
 
 app = create_app()
 
-@app.before_first_request
-def before_first_request():
-    print('before_first_request')
-    scheduler.start()
-    scheduleTasks()
+# @app.before_first_request
+# def before_first_request():
+#     print('before_first_request')
+#     scheduler.start()
+#     scheduleTasks()
 
-with open("environment.json") as f:
+with open("src/environment.json") as f:
     d = json.load(f)
     ALGORITHMS = d["ALGORITHMS"]
     AUTH0_DOMAIN = d["AUTH0_DOMAIN"]

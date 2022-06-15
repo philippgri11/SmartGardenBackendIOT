@@ -1,7 +1,7 @@
 import datetime
 import json
 
-import Database
+import src.Database as Database
 
 
 class Rule:
@@ -38,6 +38,8 @@ class Rule:
                 if len(str) > 0:
                     str += ','
                 str += tage[i]
+        if str == '':
+            return 'mon'
         return str
 
     def changed(self):

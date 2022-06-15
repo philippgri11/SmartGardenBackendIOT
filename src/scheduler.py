@@ -5,30 +5,29 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-import Database
-import controlGPIO
-from Database import getAllRules
-from Rule import Rule
+import src.Database as Database
+from src.controlGPIO import output
+from src.Database import getAllRules, getPath
+from src.Rule import Rule
 
-with open("environment.json") as f:
+with open("src/environment.json") as f:
     d = json.load(f)
     databaseName = d["databaseName"]
 
-_module_directory = os.path.dirname(os.path.abspath(__file__))
-url = os.path.join(_module_directory, databaseName)
+url = getPath()
 jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///' + url)}
 scheduler = BackgroundScheduler(jobstores=jobstores)
 
 
 def scheduleTurnOn(rule):
     print(rule.getDayOfWeek())
-    scheduler.add_job(controlGPIO.output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.von.hour,
+    scheduler.add_job(output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.von.hour,
                       minute=rule.von.minute, id=str(rule.id) + 'on', args=(Database.getGPIOByRuleID(rule.id), 1),
                       max_instances=1, jobstore='default')
 
 
 def scheduleTurnOff(rule):
-    scheduler.add_job(controlGPIO.output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
+    scheduler.add_job(output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
                       minute=rule.bis.minute, id=str(rule.id) + 'off', args=(Database.getGPIOByRuleID(rule.id), 0),
                       max_instances=1, jobstore='default')
 

@@ -1,6 +1,28 @@
-FROM tiangolo/uwsgi-nginx-flask:python3.10
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
-ENV NGINX_WORKER_PROCESSES 1
-ENV UWSGI_INI /app/uwsgi.ini
-COPY ./app /app
+FROM python:3.9
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+        libatlas-base-dev gfortran nginx supervisor
+
+RUN pip3 install uwsgi
+
+COPY requirements.txt /project/requirements.txt
+COPY smartGarden.sqlite /project/smartGarden.sqlite
+
+RUN pip3 install -r /project/requirements.txt
+
+RUN useradd --no-create-home nginx
+
+RUN rm /etc/nginx/sites-enabled/default
+RUN rm -r /root/.cache
+
+COPY server-conf/nginx.conf /etc/nginx/
+COPY server-conf/flask-site-nginx.conf /etc/nginx/conf.d/
+COPY server-conf/uwsgi.ini /etc/uwsgi/
+COPY server-conf/supervisord.conf /etc/supervisor/
+
+COPY src /project/src
+
+WORKDIR /project
+
+CMD ["/usr/bin/supervisord"]

@@ -1,4 +1,8 @@
 version: '3'
 services:
-  web:
-    build: ./
+  app:
+    build: .
+    ports:
+     - "5000:80"
+    volumes:
+     - .:/project
