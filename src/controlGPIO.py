@@ -8,16 +8,16 @@ with open("src/environment.json") as f:
 
 def setupGPIO():
     GPIO.setmode(GPIO.BCM)
-    # GPIO.setup(channel, GPIO.OUT, initial=GPIO.LOW)
+    GPIO.setup(channel, GPIO.OUT, initial=GPIO.LOW)
 
 def output(chanel, state):
     if state==1:
         if checkBeforeExcecute():
             print(f"GPIO {chanel}: {state}")
-            # GPIO.output(channel, state)
+            GPIO.output(channel, state)
     else:
         print(f"GPIO {chanel}: {state}")
-        # GPIO.output(channel, state)
+        GPIO.output(channel, state)
 
 
 def checkBeforeExcecute():
