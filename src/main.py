@@ -3,23 +3,17 @@ from urllib.request import urlopen
 import flask
 from flask import json, request, jsonify, Flask
 from flask_cors import cross_origin
-import src.Database as Database
 
-from src.Rule import Rule, RuleEncoder
-from src.Zone import Zone, ZoneEncoder
+from src.Rule import Rule
 from jose import jwt
 from six import wraps
-from src.scheduler import scheduler, scheduleTasks, scheduleJob
+
+from src.controlGPIO import output
+from src.scheduler import scheduler
 
 from src.wsgi import create_app
 
 app = create_app()
-
-# @app.before_first_request
-# def before_first_request():
-#     print('before_first_request')
-#     scheduler.start()
-#     scheduleTasks()
 
 with open("src/environment.json") as f:
     d = json.load(f)
@@ -138,64 +132,24 @@ def handle_auth_error(ex):
     return response
 
 
-@app.route('/save_zone_title', methods=['POST'])
+@app.route('/create_new_job', methods=['GET'])
 @cross_origin()
-@requires_auth
-def set_zone_title():
-    request_data = request.data
-    title = json.loads(request_data)['title']
-    zoneId = json.loads(request_data)['zoneId']
-    Database.updateZoneTitel(zoneId, title)
+def create_new_job():
+    rule = getRulefromRequestData(request.data)
+    GPIO = request.args.get('GPIO', type=int)
+    create_new_job(rule, GPIO)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
                    ), 200
 
 
-@app.route('/get_zone_titel', methods=['GET'])
+@app.route('/remove_Job', methods=['POST'])
 @cross_origin()
-@requires_auth
-def get_zone_titel():
-    zoneId = request.args.get('zone_id', type=int)
-    return json.dumps(Database.getZoneTitel(zoneId))
-
-
-@app.route('/get_rules', methods=['GET'])
-@cross_origin()
-@requires_auth
-def get_rules():
-    zoneId = request.args.get('zone_id', type=int)
-    rules = []
-    [rules.append(Rule(rule)) for rule in Database.getRules(zoneId)]
-    return json.dumps(rules, cls=RuleEncoder)
-
-
-@app.route('/get_rule', methods=['GET'])
-@cross_origin()
-@requires_auth
-def get_rule():
-    ruleID = request.args.get('ruleId', type=int)
-    return json.dumps(Database.getRuleByRuleId(ruleID), cls=RuleEncoder)
-
-
-@app.route('/create_new_rule', methods=['GET'])
-@cross_origin()
-@requires_auth
-def create_new_rule():
-    zoneId = request.args.get('zoneID', type=int)
-    Database.createNewRule(0, 0, 0, 0, "0000000", 0, zoneId)
-    ruleID = Database.getLastRuleID()
-    return json.dumps(Database.getRuleByRuleId(ruleID), cls=RuleEncoder)
-
-
-@app.route('/delete_rule', methods=['POST'])
-@cross_origin()
-@requires_auth
-def delete_rule():
+def remove_Job():
     request_data = request.data
     id = json.loads(request_data)['id']
     scheduler.removeJob(id)
-    Database.deleteRuleByRuleId(id)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -204,23 +158,28 @@ def delete_rule():
 
 @app.route('/update_status', methods=['POST'])
 @cross_origin()
-@requires_auth
 def update_status():
     request_data = request.data
-    id = json.loads(request_data)['id']
+    zoneId = json.loads(request_data)['ZoneId']
     status = json.loads(request_data)['status']
-    Database.updateStatus(id, status)
+    output(zoneId,status)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
                    ), 200
 
 
-@app.route('/save_rule', methods=['POST'])
+@app.route('/modifyJob', methods=['POST'])
 @cross_origin()
-@requires_auth
-def save_rule():
-    request_data = request.data
+def modifyJob():
+    rule = getRulefromRequestData(request.data)
+    modifyJob(rule)
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
+def getRulefromRequestData(request_data):
     id = json.loads(request_data)['id']
     bisHours = json.loads(request_data)['bis']['hours']
     bisMinutes = json.loads(request_data)['bis']['minutes']
@@ -228,40 +187,7 @@ def save_rule():
     vonminutes = json.loads(request_data)['von']['minutes']
     wochentag = json.loads(request_data)['wochentage']
     wetter = json.loads(request_data)['wetter']
-    tage = ''
-    for tag in wochentag:
-        if (tag):
-            tage += '1'
-        else:
-            tage += '0'
-    rule = Rule(id, vonminutes, vonHours, bisMinutes, bisHours, tage, wetter)
-    if rule.changed():
-        scheduleJob(rule)
-        Database.saveRule(rule)
-    return jsonify(isError=False,
-                   message="Success",
-                   statusCode=200,
-                   ), 200
-
-
-@app.route('/get_zones', methods=['GET'])
-@cross_origin()
-@requires_auth
-def get_zones():
-    zones = []
-    [zones.append(Zone(zone)) for zone in Database.getZones()]
-    return json.dumps(zones, cls=ZoneEncoder)
-
-
-@app.route('/start', methods=['POST'])
-@cross_origin()
-def start():
-    scheduler.start()
-    scheduleTasks()
-    return jsonify(isError=False,
-                   message="Success",
-                   statusCode=200,
-                   ), 200
+    return Rule(id, vonminutes, vonHours, bisMinutes, bisHours, wochentag, wetter)
 
 
 if __name__ == '__main__':

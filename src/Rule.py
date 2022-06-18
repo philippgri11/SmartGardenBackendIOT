@@ -1,9 +1,6 @@
 import datetime
 import json
 
-import src.Database as Database
-
-
 class Rule:
     def __init__(self, *args):
         print(args)
@@ -42,9 +39,6 @@ class Rule:
             return 'mon'
         return str
 
-    def changed(self):
-        rule = Database.getRuleByRuleId(self.id)
-        return rule.von == self.von or rule.bis == self.bis or rule.wochentag == self.wochentag
 
 
 

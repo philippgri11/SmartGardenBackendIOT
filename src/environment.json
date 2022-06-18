@@ -8,5 +8,6 @@
   "lat" : "52.06092693250603",
   "lon" : "11.427646367272217",
   "exclude" : "hourly,current,minutely,alerts",
-  "databaseName" : "smartGarden.sqlite"
+  "databaseName" : "smartGarden.sqlite",
+  "databasePath" : "/project/smartGarden.sqlite"
 }
