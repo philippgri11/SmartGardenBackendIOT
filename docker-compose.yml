@@ -3,8 +3,19 @@ services:
   app:
     build: .
     ports:
-     - "80:80"
+     - "8000:8000"
     volumes:
      - .:/project
-
+     - /dev:/dev
+     - /dev/gpiomem:/dev/gpiomem
+     - /sys:/sys
+     - /etc/udev/rules.d:/etc/udev/rules.d
+    devices:
+     - /dev:/dev
+    group_add:
+      - 998
+      - 997
+    privileged: true
+    environment:
+      GPIO_GID: 997
 

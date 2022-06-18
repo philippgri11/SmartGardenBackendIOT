@@ -30,7 +30,7 @@ def scheduleTurnOff(rule, GPIO):
                       max_instances=1, jobstore='default')
 
 
-def create_new_job(rule: Rule, GPIO):
+def createNewJob(rule: Rule, GPIO):
     scheduleTurnOn(rule, GPIO)
     scheduleTurnOff(rule, GPIO)
 

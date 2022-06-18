@@ -9,7 +9,7 @@ from jose import jwt
 from six import wraps
 
 from src.controlGPIO import output
-from src.scheduler import scheduler
+from src.scheduler import createNewJob, modifyJob, removeJob
 
 from src.wsgi import create_app
 
@@ -24,7 +24,7 @@ with open("src/environment.json") as f:
 def create_new_job():
     rule = getRulefromRequestData(request.data)
     GPIO = request.args.get('GPIO', type=int)
-    create_new_job(rule, GPIO)
+    createNewJob(rule, GPIO)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -36,7 +36,7 @@ def create_new_job():
 def remove_Job():
     request_data = request.data
     id = json.loads(request_data)['id']
-    scheduler.removeJob(id)
+    removeJob(id)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -58,11 +58,19 @@ def update_status():
 
 @app.route('/modifyJob', methods=['POST'])
 @cross_origin()
-def modifyJob():
+def modify_Job():
     rule = getRulefromRequestData(request.data)
     modifyJob(rule)
     return jsonify(isError=False,
                    message="Success",
+                   statusCode=200,
+                   ), 200
+
+@app.route('/ping', methods=['GET'])
+@cross_origin()
+def ping():
+    return jsonify(isError=False,
+                   message="pong",
                    statusCode=200,
                    ), 200
 
