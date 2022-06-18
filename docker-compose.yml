@@ -13,9 +13,8 @@ services:
     devices:
      - /dev:/dev
     group_add:
-      - 998
-      - 997
+      - '998'
+      - '997'
     privileged: true
     environment:
       GPIO_GID: 997
-
