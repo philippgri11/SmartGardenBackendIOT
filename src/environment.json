@@ -1,0 +1,13 @@
+{
+  "rainThreshold":  1,
+  "ALGORITHMS": ["RS256"],
+  "AUTH0_DOMAIN" : "dev-3q0bg4dy.us.auth0.com",
+  "API_AUDIENCE" : "http://127.0.0.1:5000/",
+  "api_key" : "5b8c8847da5d0868c515b81f5a3d586f",
+  "base_url" : "https://api.openweathermap.org/data/2.5/onecall",
+  "lat" : "52.06092693250603",
+  "lon" : "11.427646367272217",
+  "exclude" : "hourly,current,minutely,alerts",
+  "databaseName" : "smartGarden.sqlite",
+  "databasePath" : "/project/smartGarden.sqlite"
+}
