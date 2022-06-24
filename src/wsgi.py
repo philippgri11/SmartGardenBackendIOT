@@ -1,13 +1,16 @@
+import threading
+
 from flask import Flask
 
 from src.controlGPIO import setupGPIO
-from src.scheduler import scheduler
+from src.scheduler import start
 
 
 def create_app():
+    print('create_app')
     app = Flask(__name__)
     app.config['CORS_HEADERS'] = 'Content-Type'
-    scheduler.start()
+    threading.Thread(target=start())
     setupGPIO()
     return app
 

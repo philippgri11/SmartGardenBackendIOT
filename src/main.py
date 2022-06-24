@@ -1,14 +1,11 @@
-import os
-from urllib.request import urlopen
-import flask
 from flask import json, request, jsonify, Flask
 from flask_cors import cross_origin
 
 from src.Rule import Rule
-from jose import jwt
-from six import wraps
 
 from src.controlGPIO import output
+from src.database import getStatusRuhemodus
+from src.ruhemodus import setRuhemodus
 from src.scheduler import createNewJob, modifyJob, removeJob
 
 from src.wsgi import create_app
@@ -47,9 +44,10 @@ def remove_Job():
 @cross_origin()
 def update_status():
     request_data = request.data
-    zoneId = json.loads(request_data)['ZoneId']
+    print(request_data)
+    gpio = json.loads(request_data)['GPIO']
     status = json.loads(request_data)['status']
-    output(zoneId,status)
+    output(gpio,status)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -84,6 +82,23 @@ def getRulefromRequestData(request_data):
     wetter = json.loads(request_data)['wetter']
     return Rule(id, vonminutes, vonHours, bisMinutes, bisHours, wochentag, wetter)
 
+
+
+@app.route('/setRuhemodus', methods=['POST'])
+@cross_origin()
+def set_ruhemodus():
+    status = request.args.get('status', type=int)
+    setRuhemodus(status)
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
+@app.route('/get_ruhemodus', methods=['GET'])
+@cross_origin()
+def get_ruhemodus():
+    status = getStatusRuhemodus()
+    return json.dumps(status)
 
 if __name__ == '__main__':
     app.run()

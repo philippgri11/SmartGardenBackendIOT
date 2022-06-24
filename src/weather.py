@@ -15,7 +15,10 @@ complete_url = base_url + "?appid=" + api_key + "&lat=" + lat + "&lon="+ lon + "
 def getRainThisDay():
     response = requests.get(complete_url)
     weatherData = response.json()
-    return weatherData['daily'][0]['rain']
+    rain = 0
+    if 'rain' in weatherData:
+        rain = weatherData['daily'][0]['rain']
+    return rain
 
 if __name__ == '__main__':
     print(getRainThisDay())

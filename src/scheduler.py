@@ -1,5 +1,4 @@
 import json
-
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -16,6 +15,8 @@ with open("src/environment.json") as f:
 jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///' + databasePath)}
 scheduler = BackgroundScheduler(jobstores=jobstores)
 
+def start():
+    scheduler.start()
 
 def scheduleTurnOn(rule, GPIO):
     print(rule.getDayOfWeek())

@@ -10,6 +10,7 @@ services:
      - /dev/gpiomem:/dev/gpiomem
      - /sys:/sys
      - /etc/udev/rules.d:/etc/udev/rules.d
+     - /sys/devices/platform:/sys/devices/platform
     devices:
      - /dev:/dev
     group_add:
