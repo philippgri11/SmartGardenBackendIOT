@@ -6,12 +6,14 @@ from src.Rule import Rule
 from src.controlGPIO import output
 from src.database import getStatusRuhemodus
 from src.ruhemodus import setRuhemodus
-from src.scheduler import createNewJob, modifyJob, removeJob
+from src.scheduler import createNewJob, modifyJob, removeJob, start
 
 from src.wsgi import create_app
 
 app = create_app()
 
+
+start()
 with open("src/environment.json") as f:
     d = json.load(f)
     ALGORITHMS = d["ALGORITHMS"]
