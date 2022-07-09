@@ -1,21 +1,13 @@
-import os
-from urllib.request import urlopen
-import flask
-from flask import json, request, jsonify, Flask
+from flask import json, request, jsonify
 from flask_cors import cross_origin
-
 from src.Rule import Rule
-from jose import jwt
-from six import wraps
-
-from src.controlGPIO import output
-from src.scheduler import createNewJob, modifyJob, removeJob
+from src.scheduler import createNewJob, modifyJob, removeJob, conn
 
 from src.wsgi import create_app
 
 app = create_app()
 
-with open("src/environment.json") as f:
+with open("/home/pi/smartGardenBackendIOT/src/environment.json") as f:
     d = json.load(f)
     ALGORITHMS = d["ALGORITHMS"]
 
@@ -47,9 +39,10 @@ def remove_Job():
 @cross_origin()
 def update_status():
     request_data = request.data
-    zoneId = json.loads(request_data)['ZoneId']
+    print(request_data)
+    gpio = json.loads(request_data)['GPIO']
     status = json.loads(request_data)['status']
-    output(zoneId,status)
+    conn.root.output(gpio,status)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -84,6 +77,28 @@ def getRulefromRequestData(request_data):
     wetter = json.loads(request_data)['wetter']
     return Rule(id, vonminutes, vonHours, bisMinutes, bisHours, wochentag, wetter)
 
+
+
+@app.route('/setRuhemodus', methods=['POST'])
+@cross_origin()
+def set_ruhemodus():
+    request_data = request.data
+    print(request_data)
+    status = json.loads(request_data)['status']
+    conn.root.setRuhemodusStatus(status)
+    return jsonify(isError=False,
+                   message="Success",
+                   statusCode=200,
+                   ), 200
+
+@app.route('/getRuhemodus', methods=['GET'])
+@cross_origin()
+def get_ruhemodus():
+    print("get_ruhemodusIOT")
+    status = conn.root.getStatusRuhemodus()
+    print(status)
+    payload = {"status": status}
+    return json.dumps(payload)
 
 if __name__ == '__main__':
     app.run()

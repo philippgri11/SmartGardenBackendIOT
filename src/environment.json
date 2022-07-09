@@ -1,5 +1,5 @@
 {
-  "rainThreshold":  1,
+  "rainThreshold":  30,
   "ALGORITHMS": ["RS256"],
   "AUTH0_DOMAIN" : "dev-3q0bg4dy.us.auth0.com",
   "API_AUDIENCE" : "http://127.0.0.1:5000/",
@@ -9,6 +9,7 @@
   "lon" : "11.427646367272217",
   "exclude" : "hourly,current,minutely,alerts",
   "databaseName" : "smartGarden.sqlite",
-  "databasePath" : "/project/smartGarden.sqlite",
-  "GPIOchannel": [4,17,27,22,5,6,13,26,16,12,25,24,23]
+  "databasePath" : "./smartGarden.sqlite",
+  "GPIOchannel": [4,17,27,22,5,6,13,26,16,12,25,24,23],
+  "timeToWaitRuhemodus" : 10
 }

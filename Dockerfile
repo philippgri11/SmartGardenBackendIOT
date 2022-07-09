@@ -1,4 +1,4 @@
-FROM debian:latest
+FROM python:3.9
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
@@ -13,7 +13,6 @@ RUN pip3 install -r /project/requirements.txt
 
 RUN useradd --no-create-home nginx
 
-USER mqttgpio
 RUN rm /etc/nginx/sites-enabled/default
 RUN rm -r /root/.cache
 
