@@ -1,6 +1,7 @@
 import datetime
 import json
 
+
 class Rule:
     def __init__(self, *args):
         print(args)
@@ -14,7 +15,12 @@ class Rule:
             self.id = args[0]
             self.von = datetime.time(args[2], args[1])
             self.bis = datetime.time(args[4], args[3])
-            self.wochentag = args[5]
+            tag = []
+            print('args[5]')
+            print(args[5])
+            for char in args[5]:
+                tag.append(True) if (char == '1') else tag.append(False)
+            self.wochentag = tag
             self.wetter = args[6]
         elif isinstance(args[0], tuple):
             zone = args[0]
@@ -22,6 +28,8 @@ class Rule:
             self.von = datetime.time(zone[2], zone[1])
             self.bis = datetime.time(zone[4], zone[3])
             tag = []
+            print('zone[5]')
+            print(zone[5])
             for char in zone[5]:
                 tag.append(True) if (char == '1') else tag.append(False)
             self.wochentag = tag
@@ -31,6 +39,7 @@ class Rule:
         str = ''
         tage = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
         for i in range(len(self.wochentag)):
+            print(self.wochentag[i])
             if self.wochentag[i]:
                 if len(str) > 0:
                     str += ','
@@ -38,10 +47,6 @@ class Rule:
         if str == '':
             return 'mon'
         return str
-
-
-
-
 
 
 class RuleEncoder(json.JSONEncoder):

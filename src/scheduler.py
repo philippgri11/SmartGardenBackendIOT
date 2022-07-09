@@ -1,61 +1,41 @@
 import json
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-
-from src.controlGPIO import output
+import rpyc
 from src.Rule import Rule
 
-with open("src/environment.json") as f:
+with open("/home/pi/smartGardenBackendIOT/src/environment.json") as f:
     d = json.load(f)
     databaseName = d["databaseName"]
     databasePath = d["databasePath"]
+rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+conn = rpyc.connect('localhost', 12345, config = rpyc.core.protocol.DEFAULT_CONFIG)
 
-
-jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///' + databasePath)}
-scheduler = BackgroundScheduler(jobstores=jobstores)
-
-def start():
-    scheduler.start()
-
-def scheduleTurnOn(rule, GPIO):
-    print(rule.getDayOfWeek())
-    scheduler.add_job(output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.von.hour,
-                      minute=rule.von.minute, id=str(rule.id) + 'on', args=(GPIO, 1),
-                      max_instances=1, jobstore='default')
-
-
-def scheduleTurnOff(rule, GPIO):
-    scheduler.add_job(output, 'cron', day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
-                      minute=rule.bis.minute, id=str(rule.id) + 'off', args=(GPIO, 0),
-                      max_instances=1, jobstore='default')
+def scheduleGPIO(rule, GPIO, status):
+    if status:
+        id=str(rule.id) + 'on'
+    else:
+        id =str(rule.id) + 'off'
+    conn.root.addJob(day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
+                      minute=rule.bis.minute, id=id, status=status, GPIO=GPIO)
 
 
 def createNewJob(rule: Rule, GPIO):
-    scheduleTurnOn(rule, GPIO)
-    scheduleTurnOff(rule, GPIO)
-
+    scheduleGPIO(rule, GPIO, True)
+    scheduleGPIO(rule, GPIO, False)
 
 def modifyJob(rule: Rule):
     jobID = str(rule.id) + 'on'
-    trigger = CronTrigger(day_of_week=rule.getDayOfWeek(), hour=rule.von.hour,
+    print('modifyJob: rule of days')
+    print(rule.getDayOfWeek())
+    print(rule.wochentag)
+    conn.root.modifyJob(job_id= jobID,day_of_week=rule.getDayOfWeek(), hour=rule.von.hour,
                           minute=rule.von.minute)
-    scheduler.get_job(jobID).modify(trigger=trigger)
     jobID = str(rule.id) + 'off'
-    trigger = CronTrigger(day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
+    conn.root.modifyJob(job_id= jobID, day_of_week=rule.getDayOfWeek(), hour=rule.bis.hour,
                           minute=rule.bis.minute)
-    scheduler.get_job(jobID).modify(trigger=trigger)
 
 
 def removeJob(ruleID):
-    if scheduler.get_job(str(ruleID) + 'on'):
-        scheduler.remove_job(str(ruleID) + 'on')
-    if scheduler.get_job(str(ruleID) + 'off'):
-        scheduler.remove_job(str(ruleID) + 'off')
-
-
-if __name__ == '__main__':
-    scheduler.start()
-    scheduler.print_jobs()
-    print(scheduler.get_jobs(jobstore='default'))
-    print(scheduler.get_job(job_id='39on', jobstore='default'))
+    if conn.root.get_job(str(ruleID) + 'on'):
+        conn.root.remove_job(str(ruleID) + 'on')
+    if conn.root.get_job(str(ruleID) + 'off'):
+        conn.root.remove_job(str(ruleID) + 'off')

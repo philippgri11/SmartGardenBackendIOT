@@ -1,20 +1,13 @@
-from flask import json, request, jsonify, Flask
+from flask import json, request, jsonify
 from flask_cors import cross_origin
-
 from src.Rule import Rule
-
-from src.controlGPIO import output
-from src.database import getStatusRuhemodus
-from src.ruhemodus import setRuhemodus
-from src.scheduler import createNewJob, modifyJob, removeJob, start
+from src.scheduler import createNewJob, modifyJob, removeJob, conn
 
 from src.wsgi import create_app
 
 app = create_app()
 
-
-start()
-with open("src/environment.json") as f:
+with open("/home/pi/smartGardenBackendIOT/src/environment.json") as f:
     d = json.load(f)
     ALGORITHMS = d["ALGORITHMS"]
 
@@ -49,7 +42,7 @@ def update_status():
     print(request_data)
     gpio = json.loads(request_data)['GPIO']
     status = json.loads(request_data)['status']
-    output(gpio,status)
+    conn.root.output(gpio,status)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
@@ -89,18 +82,23 @@ def getRulefromRequestData(request_data):
 @app.route('/setRuhemodus', methods=['POST'])
 @cross_origin()
 def set_ruhemodus():
-    status = request.args.get('status', type=int)
-    setRuhemodus(status)
+    request_data = request.data
+    print(request_data)
+    status = json.loads(request_data)['status']
+    conn.root.setRuhemodusStatus(status)
     return jsonify(isError=False,
                    message="Success",
                    statusCode=200,
                    ), 200
 
-@app.route('/get_ruhemodus', methods=['GET'])
+@app.route('/getRuhemodus', methods=['GET'])
 @cross_origin()
 def get_ruhemodus():
-    status = getStatusRuhemodus()
-    return json.dumps(status)
+    print("get_ruhemodusIOT")
+    status = conn.root.getStatusRuhemodus()
+    print(status)
+    payload = {"status": status}
+    return json.dumps(payload)
 
 if __name__ == '__main__':
     app.run()
